@@ -2,7 +2,7 @@
 // V0.1 - Basic control from a single knob
 // V0.2 - Display value of a single label (after enabling strings in config.h)
 
-//#include "U8glib.h"
+#include <Wire.h> 
 #include <ControlChain.h>
 #include <LiquidCrystal_I2C.h>
 
@@ -23,30 +23,13 @@ float portValues[amountOfPorts];
 int ledPin = 13, potPin = A0;
 int modval1 = 0;
 
-/**********************************************************/
-char array1[] = " MOD DUO               "; //the string to print on the LCD
-char array2[] = "hello, Ian!             "; //the string to print on the LCD
-int tim = 500; //the value of delay time
 // initialize the library with the numbers of the interface pins
-LiquidCrystal_I2C lcd(0x3F, 20, 4); // set the LCD address to 0x3F for a 20 chars and 4 line display
-
-//U8GLIB_SH1106_128X64 u8g(4, 5, 6, 7);  // SW SPI Com: SCK = 4, MOSI = 5, CS = 6, A0 = 7 (new blue HalTec OLED)
-
-// Set up the big display
-//void u8g_prepare(void) {
-//	u8g.setFont(u8g_font_6x10);
-//	u8g.setFontRefHeightExtendedText();
-//	u8g.setDefaultForegroundColor();
-//	u8g.setFontPosTop();
-//}
+LiquidCrystal_I2C lcd(0x3F, characters, lines); // set the LCD address to 0x3F for a 20 chars and 4 line display
 
 void setup() {
 	// configure led
 	pinMode(ledPin, OUTPUT);
-	digitalWrite(ledPin, LOW);
-
-	lcd.init(); //initialize the lcd
-	lcd.backlight(); //open the backlight 
+	digitalWrite(ledPin, LOW); 
 
 	// initialize control chain
 	cc.begin();
@@ -65,10 +48,10 @@ void setup() {
 		case 1: actuator_config.name = "Knob 2";   break;
 		case 2: actuator_config.name = "Pedal 1";  break;
 		case 3:	actuator_config.name = "Pedal 2";  break;
-		case 4: actuator_config.name = "Button 1"; break;
-		case 5: actuator_config.name = "Button 2"; break;
-		case 6: actuator_config.name = "Button 3"; break;
-		case 7: actuator_config.name = "Button 4"; break;
+		case 4: actuator_config.name = "Btn 1"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; actuator_config.max = 1; break;
+		case 5: actuator_config.name = "Btn 2"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 6: actuator_config.name = "Btn 3"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 7: actuator_config.name = "Btn 4"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
 		}
 
 		actuator_config.value = &portValues[i];
@@ -83,67 +66,66 @@ void setup() {
 		cc.addActuator(device, actuator);
 	}
 
-	//*****
-	// configure actuator
-	cc_actuator_config_t actuator_config;
-	actuator_config.type = CC_ACTUATOR_CONTINUOUS;
-	actuator_config.name = "Turn me!";
-	actuator_config.value = &potValue;
-	actuator_config.min = 0.0;
-	actuator_config.max = 1023.0;
-	actuator_config.supported_modes = CC_MODE_REAL | CC_MODE_INTEGER;
-	actuator_config.max_assignments = 1;
+	//***** 
+	//// configure actuator - individual actuator - test only!
+	//cc_actuator_config_t actuator_config;
+	//actuator_config.type = CC_ACTUATOR_CONTINUOUS;
+	//actuator_config.name = "Turn me!";
+	//actuator_config.value = &potValue;
+	//actuator_config.min = 0.0;
+	//actuator_config.max = 1023.0;
+	//actuator_config.supported_modes = CC_MODE_REAL | CC_MODE_INTEGER;
+	//actuator_config.max_assignments = 1;
 
-	// create and add actuator to device
-	cc_actuator_t *actuator;
-	actuator = cc.newActuator(&actuator_config);
-	cc.addActuator(device, actuator);
+	//// create and add actuator to device
+	//cc_actuator_t *actuator;
+	//actuator = cc.newActuator(&actuator_config);
+	//cc.addActuator(device, actuator);
 
+	lcd.init(); //initialize the lcd
+	lcd.backlight(); //open the backlight
+	
 	//set event callbacks
-	//    cc.setEventCallback(CC_EV_UPDATE, updateValues);
+	cc.setEventCallback(CC_EV_UPDATE, updateValues);
 	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
 	// static_cast<cc_assignment_t*>(updateNames));
 
 	//static_cast<FilterAuthenticate*>(eventData)
 	//    cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);  
+
+
 }
 
+String val2;
 void displayInfo()
 {
-	lcd.setCursor(1,1); // set the cursor to column 15, line 1
-	lcd.print("Hello");
-	//String mval = "Modulator1: " + String(modval1);
+	lcd.setCursor(0,0); // set the cursor to column 15, line 1
+	lcd.print("MOD DUO Controller");
+	
+	String mval = "Modulator1: " + String(modval1);
 	//u8g.drawStr(0, 0, "MOD interface-");
 	////u8g.print("MOD interface-");
 	////u8g.drawStr( 0, 16, mval );
 	//u8g.setPrintPos(0, 16);
-	//String val2 = "A1: " + (String)analogRead(0);
-	//u8g.print(val2);
+	lcd.setCursor(0, 1);
+	val2 = "A1: " + (String)analogRead(0) + "     ";
+	lcd.print(val2);
+	lcd.setCursor(0, 2);
+	lcd.print("actname:" + (String)actuatorNames[1]);
+
 	//String val3 = "A2: " + (String)analogRead(1);
-	//
-	//u8g.setPrintPos(0, 32);
-	//u8g.print(testactname);
-	//u8g.setPrintPos(0, 48);
 	//u8g.print("A2 label:" + (String)actuatorNames[1]);
 }
 
 void loop() {
-	// put your main code here, to run repeatedly:
-	//u8g.firstPage();
-	//u8g_prepare();
-/*	do {
-		displayInfo();
-	} while (1 == 1);*/ // (u8g.nextPage());
-
+	//lcd.clear();
 	displayInfo();
-	potValue = analogRead(potPin);
-
 	for (int i = 0; i < amountOfPorts; i++) {
 		portValues[i] = analogRead(i);
 	}
-
 	cc.run();
-	delay(50);
+	//delay(400);
+	
 }
 
 //updates actuator value and calls the write function
@@ -161,29 +143,48 @@ void writeValues(cc_assignment_t *assignment)
 void updateNames(cc_assignment_t *assignment) {
 	minValues[assignment->actuator_id] = assignment->min;
 	maxValues[assignment->actuator_id] = assignment->max;
+	int len = assignment->label.size;
+	if (len >= characters) len = characters - 1;
 
-	//Bu8g.setPrintPos(0, 48);
-	//u8g.print("String testname = "name unassigned";");//(val3);
 	testactname = (String)assignment->label.text;
-	for (int i = 0; i < assignment->label.size; i++) {
+
+	//for (int i = 0; i < assignment->label.size; i++) {
+	for (int i = 0; i < len; i++) {
 		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
 	}
-	//  writeNames(assignment->actuator_id, assignment->label.size, 0);
+	//writeNames(assignment->actuator_id, assignment->label.size, 0);
 }
 
 //write the name of the selected potentiometer
 void writeNames(int num, int labelsize, int clr) {
-	//  switch (num){
-	//  case 0:
-	//    lcd.setCursor(0,0);
-	//    lcd.print ("#Pot 1:              ");
-	//    if ( clr != 1){
-	//      u8g.setPrintPos(0, 48); 
-	//      u8g.print("dummy");//(val3);
-	//      lcd.setCursor(10,0);
-	//      for (int i = 0; i < labelsize; i++){
-	//        lcd.print (actuatorNames[num][i]);
-	//      }
-	//    }
-	//  break;
+	int len = labelsize;
+	if (len >= characters) len = characters - 1;
+
+	switch (num) {
+	case 0:
+		lcd.setCursor(0, 0);
+		lcd.print("#Pot 1:              ");
+		if (clr != 1) {
+			lcd.setCursor(0, 3);
+			lcd.print("x");//(val3);
+			lcd.setCursor(10, 0);
+			for (int i = 0; i < len; i++) {
+				lcd.print(actuatorNames[num][i]);
+			}
+		}
+		break;
+	case 1:
+		lcd.setCursor(0, 1);
+		lcd.print("#Pot 2:              ");
+		if (clr != 1) {
+			//u8g.setPrintPos(0, 48);
+			lcd.setCursor(3, 1);
+			lcd.print("x");//(val3);
+			lcd.setCursor(10, 0);
+			for (int i = 0; i < num; i++) {
+				lcd.print(actuatorNames[num][i]);
+			}
+		}
+		break;
+	}
 }
