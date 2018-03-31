@@ -121,7 +121,7 @@ void updateNames(cc_assignment_t *assignment){
 }
 
 //write the name of the selected potentiometer
-void writeNames (int num, int labelsize, int clr){
+//void writeNames (int num, int labelsize, int clr){
 //  switch (num){
 //  case 0:
 //    lcd.setCursor(0,0);
@@ -135,4 +135,4 @@ void writeNames (int num, int labelsize, int clr){
 //      }
 //    }
 //  break;
-}
+//}
