@@ -7,6 +7,9 @@
 #include <ControlChain.h>
 #include <LiquidCrystal_I2C.h>
 
+#define amountOfPorts 5		//amount of actuators connected 
+#define amountOfPotentiometers 4
+
 //LCDs used
 #define lines 4
 #define characters 20
@@ -16,41 +19,23 @@
 unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 20; // the debounce time; increase if the output flickers
 
-float buttonValue;
-int   buttonPin = 10;
+float	buttonValue;
+int		buttonPin = 9;
+int		buttonState;             // the current reading from the input pin
+int		lastButtonState = HIGH;  // the previous reading from the input pin
+ 
 
-int buttonState;             // the current reading from the input pin
-int lastButtonState = HIGH;  // the previous reading from the input pin
-
-							 //amount of actuators connected 
-#define amountOfPorts 4
-#define amountOfPotentiometers 4
 float potValues[amountOfPotentiometers], actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
-//2D array for saving the actuator labels
 char  actuatorNames[amountOfPorts][20];
-//String testactname = "name unassigned";
 
 ControlChain cc;
-float potValue;
-//float portValues[amountOfPorts];
-int ledPin = 13, potPin = A0;
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x3F, characters, lines); // set the LCD address to 0x3F for a 20 chars and 4 line display
 
 void setup() {
-	// configure led
-	pinMode(ledPin, OUTPUT);
-	digitalWrite(ledPin, LOW); 
 
-	// configure button pin as input and enable internal pullup
-	pinMode(buttonPin, INPUT);
-	digitalWrite(buttonPin, HIGH);
-
-	//unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
-	//unsigned long debounceDelay = 20;    // the debounce time; increase if the output flickers
-
-										 
+	SetupPins();	// Setup the pins for button input										 
 	cc.begin();		// initialize control chain
 
 	// define device name (1st parameter) and its URI (2nd parameter).  The URI must be an unique identifier for your device. A good practice is to use a URL pointing to your project's code or documentation
@@ -59,58 +44,48 @@ void setup() {
 
 	for (int i = 0; i < amountOfPorts; i++) {
 		cc_actuator_config_t actuator_config;
-		//		actuator_config.name = "Chatn #" + i;
+		String knoblabel;
 
-		pinMode(9, INPUT);
-		digitalWrite(9, HIGH);
-		pinMode(10, INPUT);
-		digitalWrite(10, HIGH);
-		pinMode(11, INPUT);
-		digitalWrite(10, HIGH);
-		pinMode(12, INPUT);
-		digitalWrite(12, HIGH);
-
-		switch (i) {
-		case 0:	actuator_config.name = "Knob 1"; break;
-		case 1: actuator_config.name = "Knob 2"; break;
-		case 2: actuator_config.name = "Exp 1";  break;
-		case 3:	actuator_config.name = "Exp 2";  break;
-		case 4: actuator_config.name = "Btn 1";  break;
-		case 5: actuator_config.name = "Btn 2";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 6: actuator_config.name = "Btn 3";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 7: actuator_config.name = "Btn 4";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		}
-
-		actuator_config.value = &potValues[i];
-		actuator_config.min = 0.0;
 		if (i < 4)
 		{
 			// Setup continuous controllers here
+			knoblabel = "Analogue ";			
 			actuator_config.type = CC_ACTUATOR_CONTINUOUS;
 			actuator_config.max = 1023.0;
 			actuator_config.supported_modes = CC_MODE_REAL | CC_MODE_INTEGER;
+			actuator_config.value = &potValues[i];
 		}
 		else
 		{
 			// Setup switches here
+			knoblabel = "Button ";			
 			actuator_config.type = CC_ACTUATOR_MOMENTARY;
-			//actuator_config.name = "Btn " + (char)(i - 4);
-			actuator_config.value = &buttonValue;
+			//actuator_config.type = CC_ACTUATOR_CONTINUOUS;
 			actuator_config.max = 1.0;
-			actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
+			//actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
+			actuator_config.value = &buttonValue;									
 		}
+
+		knoblabel += i+1;
+		char charBuf[20];						
+		knoblabel.toCharArray(charBuf, 20);
+		actuator_config.name = charBuf;
+
+		actuator_config.min = 0.0;
 		actuator_config.max_assignments = 1;
+
 		// create and add actuator to device
 		cc_actuator_t *actuator;
 		actuator = cc.newActuator(&actuator_config);
 		cc.addActuator(device, actuator);
 	}
 
-
 	lcd.init();			//initialize the lcd
 	lcd.backlight();	//open the backlight
 
-				//static_cast<cc_assignment_t*>(updateNames));
+	startupmessage();
+
+	//static_cast<cc_assignment_t*>(updateNames));
 				//static_cast<FilterAuthenticate*>(eventData) 
 
 				//startupmessage();
@@ -118,33 +93,24 @@ void setup() {
 				//set event callbacks
 				// the currently possible event callbacks are:
 				// CC_EV_ASSIGNMENT, CC_EV_UNASSIGNMENT and CC_EV_UPDATE
-	cc.setEventCallback(CC_EV_UPDATE, updateValues);
-	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
+	cc.setEventCallback(CC_EV_UPDATE,		updateValues);
+	cc.setEventCallback(CC_EV_ASSIGNMENT,	updateNames);
 	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);
 }
 
 void startupmessage() {
-	//lcd.setCursor(0, 0);
-	//lcd.print("MOD DEVICES");
-	//lcd.setCursor(0, 2);
-	//lcd.print("Control Chain");
+	lcd.setCursor(0, 0);
+	lcd.print("ISRMOD");
+	lcd.setCursor(0, 2);
+	lcd.print("Version 0.1");
+	delay(2000);
+	lcd.clear();
 }
 
 String val2;
 void displayInfo()
 {
 	lcd.setCursor(0, 0); // set the cursor to column 15, line 1
-						 //lcd.print("MOD DUO Controller");
-
-						 //String mval = "Modulator1: " + String(modval1);
-						 //u8g.drawStr(0, 0, "MOD interface-");
-						 ////u8g.print("MOD interface-");
-						 ////u8g.drawStr( 0, 16, mval );
-						 //u8g.setPrintPos(0, 16);
-						 //lcd.setCursor(0, 0);
-						 //val2 = "A1: " + (String)analogRead(0) + "     ";
-
-						 //lcd.clear();
 	lcd.print(val2);
 	lcd.setCursor(0, 0);
 	lcd.print("k1:" + (String)actuatorNames[0] + " " + (String)actuatorValues[0]);
@@ -154,18 +120,26 @@ void displayInfo()
 	lcd.print("p1:" + (String)actuatorNames[2] + " " + (String)actuatorValues[2]);
 	lcd.setCursor(0, 3);
 	lcd.print("p2:" + (String)actuatorNames[3] + " " + (String)actuatorValues[3]);
-
-	//String val3 = "A2: " + (String)analogRead(1);
-	//u8g.print("A2 label:" + (String)actuatorNames[1]);
 }
 
 void loop() {
 	//lcd.clear();
+	// read button state
+	// state =  1 -> button pressed
+	// state = -1 -> button released
+	// state =  0 -> same state as before (no change)
+	int state = readButton();
+	if (state == 1) {
+		buttonValue = 1.0;
+	}
+	else if (state == -1) {
+		buttonValue = 0.0;
+	}
+
 	displayInfo();
 	readpots();
 	cc.run();
 	delay(100);
-
 }
 
 int readButton(void) {
@@ -203,7 +177,6 @@ int readButton(void) {
 			}
 		}
 	}
-
 	lastButtonState = reading;
 	return 0;
 }
@@ -287,4 +260,24 @@ void writeNames(int num, int labelsize, int clr) {
 		}
 		break;
 	}
+}
+
+void SetupPins()
+{
+	// configure led
+	int ledPin = 13;
+	pinMode(ledPin, OUTPUT);
+	digitalWrite(ledPin, LOW);
+
+	// configure button pin as input and enable internal pullup
+	pinMode(buttonPin, INPUT);
+	digitalWrite(buttonPin, HIGH);
+	pinMode(9, INPUT);
+	digitalWrite(9, HIGH);
+	pinMode(10, INPUT);
+	digitalWrite(10, HIGH);
+	pinMode(11, INPUT);
+	digitalWrite(10, HIGH);
+	pinMode(12, INPUT);
+	digitalWrite(12, HIGH);
 }
