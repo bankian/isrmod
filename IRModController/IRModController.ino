@@ -115,6 +115,7 @@ void loop() {
 	//lcd.clear();
 
 	readButtons();
+	cc.run();
 	readpots();
 	//displayInfo();
 
@@ -130,8 +131,8 @@ void readButtons()
 	// state =  0 -> same state as before (no change)
 	for (int i = 0; i < amountOfButtons; i++)
 	{
-		readButton(i);
-		int state = lastButtonState[i];
+		
+		int state = readButton(i); //lastButtonState[i];
 		if (state == 1) {
 			buttonValue[i] = 1.0;
 		}
