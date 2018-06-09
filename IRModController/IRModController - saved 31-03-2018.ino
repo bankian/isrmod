@@ -16,12 +16,15 @@ unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay    = 20; // the debounce time; increase if the output flickers
 
 float buttonValue;
-int   buttonPin = 7;
+int   buttonPin = 10;
+
+int buttonState;             // the current reading from the input pin
+int lastButtonState = HIGH;  // the previous reading from the input pin
 
 //amount of actuators connected 
-#define amountOfPorts 8
+#define amountOfPorts 5
 #define amountOfPotentiometers 4
-float potValues[amountOfPorts], actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
+float potValues[amountOfPotentiometers], actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
 //2D array for saving the actuator labels
 char  actuatorNames[amountOfPorts][20];
 //String testactname = "name unassigned";
@@ -43,6 +46,9 @@ void setup() {
 	pinMode(buttonPin, INPUT);
 	digitalWrite(buttonPin, HIGH);
 
+	unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
+	unsigned long debounceDelay = 20;    // the debounce time; increase if the output flickers
+
 	// initialize control chain
 	cc.begin();
 
@@ -54,15 +60,24 @@ void setup() {
 		cc_actuator_config_t actuator_config;
 		//		actuator_config.name = "Chatn #" + i;
 
+		pinMode(9, INPUT);
+		digitalWrite(9, HIGH);
+		pinMode(10, INPUT);
+		digitalWrite(10, HIGH);
+		pinMode(11, INPUT);
+		digitalWrite(10, HIGH);
+		pinMode(12, INPUT);
+		digitalWrite(12, HIGH);
+
 		switch (i) {
-		case 0:	actuator_config.name = "Knob 1";   break;
-		case 1: actuator_config.name = "Knob 2";   break;
+		case 0:	actuator_config.name = "Knob 1"; break;
+		case 1: actuator_config.name = "Knob 2"; break;
 		case 2: actuator_config.name = "Exp 1";  break;
 		case 3:	actuator_config.name = "Exp 2";  break;
-		case 4: actuator_config.name = "Btn 1"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; actuator_config.max = 1; break;
-		case 5: actuator_config.name = "Btn 2"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 6: actuator_config.name = "Btn 3"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 7: actuator_config.name = "Btn 4"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 4: actuator_config.name = "Btn 1";  break; 
+		case 5: actuator_config.name = "Btn 2";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 6: actuator_config.name = "Btn 3";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 7: actuator_config.name = "Btn 4";  break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
 		}
 
 		actuator_config.value = &potValues[i];
@@ -80,7 +95,6 @@ void setup() {
 			actuator_config.type = CC_ACTUATOR_MOMENTARY;
 			//actuator_config.name = "Btn " + (char)(i - 4);
 			actuator_config.value = &buttonValue;
-			actuator_config.min = 0.0;
 			actuator_config.max = 1.0;
 			actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
 		}
@@ -98,7 +112,8 @@ void setup() {
 					 // static_cast<cc_assignment_t*>(updateNames));
 					 //static_cast<FilterAuthenticate*>(eventData) 
 
-	startupmessage();
+	//startupmessage();
+
 	//set event callbacks
 	// the currently possible event callbacks are:
 	// CC_EV_ASSIGNMENT, CC_EV_UNASSIGNMENT and CC_EV_UPDATE
@@ -145,11 +160,51 @@ void displayInfo()
 
 void loop() {
 	//lcd.clear();
-	//displayInfo();
+	displayInfo();
 	readpots();
 	cc.run();
 	//delay(100);
 
+}
+
+int readButton(void) {
+	// read the state of the switch into a local variable:
+	int reading = digitalRead(buttonPin);
+
+	// check to see if you just pressed the button
+	// (i.e. the input went from LOW to HIGH),  and you've waited
+	// long enough since the last press to ignore any noise:
+
+	// If the switch changed, due to noise or pressing:
+	if (reading != lastButtonState) {
+		// reset the debouncing timer
+		lastDebounceTime = millis();
+	}
+
+	if ((millis() - lastDebounceTime) > debounceDelay) {
+		// whatever the reading is at, it's been there for longer
+		// than the debounce delay, so take it as the actual current state:
+
+		// if the button state has changed:
+		if (reading != buttonState) {
+			buttonState = reading;
+
+			// save button last state
+			lastButtonState = reading;
+
+			// button pressed
+			if (buttonState == LOW) {
+				return 1;
+				// button released
+			}
+			else {
+				return -1;
+			}
+		}
+	}
+
+	lastButtonState = reading;
+	return 0;
 }
 
 //reads all available potentiometers
@@ -160,8 +215,7 @@ void  readpots() {
 }
 
 //updates actuator value and calls the write function
-void updateValues(void *ass) {
-	cc_assignment_t* assignment = (cc_assignment_t*)ass;
+void updateValues(cc_assignment_t *assignment) {
 	actuatorValues[assignment->actuator_id] = assignment->value;
 	//	  writeValues(assignment->actuator_id);
 
@@ -172,9 +226,8 @@ void writeValues(cc_assignment_t *assignment)
 
 }
 
-void clearlcd(void *ass)
+void clearlcd(cc_assignment_t *assignment)
 {
-	cc_assignment_t* assignment = (cc_assignment_t*)ass;
 	//lcd.clear();
 	//for (int i=0;i < assignment->label.size;i++)
 	//{ 
@@ -183,20 +236,18 @@ void clearlcd(void *ass)
 }
 
 //when assigned to a actuator, gets the needed information and calls the write names function
-//void updateNames(cc_assignment_t *assignment) {
-void updateNames(void *ass) {
-	cc_assignment_t*  assignment = (cc_assignment_t*)ass;
+void updateNames(cc_assignment_t *assignment) {
 	minValues[assignment->actuator_id] = assignment->min;
 	maxValues[assignment->actuator_id] = assignment->max;
-	int len = assignment->label.size;
-	if (len >= characters) len = characters - 1;
+	//int len = assignment-> label.size;
+	//if (len >= characters) len = characters - 1;
 
 	//testactname = (String)assignment->label.text;
 
 	//for (int i = 0; i < assignment->label.size; i++) {
-	for (int i = 0; i < len; i++) {
-		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
-	}
+//	for (int i = 0; i < len; i++) {
+//		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
+//	}
 	//writeNames(assignment->actuator_id, assignment->label.size, 0);
 	//displayInfo();
 }
