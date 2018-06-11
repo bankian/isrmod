@@ -26,6 +26,15 @@ float potValues[amountOfPorts], actuatorValues[amountOfPorts], maxValues[amountO
 char  actuatorNames[amountOfPorts][20];
 //String testactname = "name unassigned";
 
+#define Encoder1A 22
+#define Encoder1B 24
+int Encoder1ACt = 0, Encoder1AState, Encoder1ALastState;
+
+#define Encoder2A  26
+#define Encoder2B  28
+int Encoder2AState, Encoder2ALastState, Encoder2Ct = 0;
+
+
 ControlChain cc;
 float potValue;
 //float portValues[amountOfPorts];
@@ -42,6 +51,8 @@ void setup() {
 	// configure button pin as input and enable internal pullup
 	pinMode(buttonPin, INPUT);
 	digitalWrite(buttonPin, HIGH);
+
+	Encoder1ALastState = digitalRead(Encoder1A);
 
 	// initialize control chain
 	cc.begin();
@@ -108,10 +119,10 @@ void setup() {
 }
 
 void startupmessage() {
-	//lcd.setCursor(0, 0);
-	//lcd.print("MOD DEVICES");
-	//lcd.setCursor(0, 2);
-	//lcd.print("Control Chain");
+	lcd.setCursor(0, 0);
+	lcd.print("MOD DEVICES");
+	lcd.setCursor(0, 2);
+	lcd.print("Control Chain");
 }
 
 String val2;
@@ -144,6 +155,36 @@ void displayInfo()
 }
 
 void loop() {
+	Encoder1AState = digitalRead(Encoder1A); // Reads the "current" state of the outputA
+	if (Encoder1AState != Encoder1ALastState) {
+		// If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
+		if (digitalRead(Encoder1A) != (digitalRead(Encoder1B))) {
+			Encoder1ACt++;
+		}
+		else {
+			Encoder1ACt--;
+		}
+		lcd.setCursor(3, 1);
+		lcd.print("enc 1:" + (String)Encoder1ACt + "   ") ;
+
+	}
+	Encoder1ALastState = Encoder1AState;
+
+	Encoder2AState = digitalRead(Encoder2A); // Reads the "current" state of the outputA
+	if (Encoder2AState != Encoder2ALastState) {
+		// If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
+		if (digitalRead(Encoder2A) != digitalRead(Encoder2B)) {
+			Encoder2Ct++;
+		}
+		else {
+			Encoder2Ct--;
+		}
+		lcd.setCursor(1, 10);
+		lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
+
+	}
+	Encoder2ALastState = Encoder2AState;
+
 	//lcd.clear();
 	//displayInfo();
 	readpots();
@@ -233,4 +274,13 @@ void writeNames(int num, int labelsize, int clr) {
 		}
 		break;
 	}
+
+
+}
+
+void SetupPins()
+{
+	// Encoders
+	pinMode(Encoder1A, INPUT);
+	pinMode(Encoder1B, INPUT);
 }
