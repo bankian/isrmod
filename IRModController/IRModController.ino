@@ -16,29 +16,34 @@ unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay    = 20; // the debounce time; increase if the output flickers
 
 float buttonValue;
-int   buttonPin = 7;
+int   buttonPin = 2;
+int displayloop = 0;
+
+int ledPin = 13;
+int buttonState;             // the current reading from the input pin
+int lastButtonState = HIGH;  // the previous reading from the input pin
 
 //amount of actuators connected 
-#define amountOfPorts 8
-#define amountOfPotentiometers 4
-float potValues[amountOfPorts], actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
+#define amountOfPorts 10
+#define amountOfPotentiometers 2
+float actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
+//potValues[amountOfPorts], 
 //2D array for saving the actuator labels
 char  actuatorNames[amountOfPorts][20];
 //String testactname = "name unassigned";
 
-#define Encoder1A 22
-#define Encoder1B 24
-int Encoder1ACt = 0, Encoder1AState, Encoder1ALastState;
+// Rotary Encoders
+#define Encoder1Port 6
+#define Encoder1APin  26
+#define Encoder1BPin  28
+int Encoder1AState, Encoder1ALastState, Encoder1Ct = 0;
 
-#define Encoder2A  26
-#define Encoder2B  28
-int Encoder2AState, Encoder2ALastState, Encoder2Ct = 0;
-
+#define Encoder2Port 7
+#define Encoder2APin 22
+#define Encoder2BPin 24
+int Encoder2Ct = 0, Encoder2AState, Encoder2ALastState;
 
 ControlChain cc;
-float potValue;
-//float portValues[amountOfPorts];
-int ledPin = 13, potPin = A0;
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_I2C lcd(0x3F, characters, lines); // set the LCD address to 0x3F for a 20 chars and 4 line display
@@ -49,10 +54,10 @@ void setup() {
 	digitalWrite(ledPin, LOW); */
 
 	// configure button pin as input and enable internal pullup
-	pinMode(buttonPin, INPUT);
-	digitalWrite(buttonPin, HIGH);
 
-	Encoder1ALastState = digitalRead(Encoder1A);
+
+	Encoder1ALastState = digitalRead(Encoder1APin);
+	Encoder2ALastState = digitalRead(Encoder2APin);
 
 	// initialize control chain
 	cc.begin();
@@ -66,35 +71,43 @@ void setup() {
 		//		actuator_config.name = "Chatn #" + i;
 
 		switch (i) {
-		case 0:	actuator_config.name = "Knob 1";   break;
-		case 1: actuator_config.name = "Knob 2";   break;
-		case 2: actuator_config.name = "Exp 1";  break;
-		case 3:	actuator_config.name = "Exp 2";  break;
-		case 4: actuator_config.name = "Btn 1"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; actuator_config.max = 1; break;
-		case 5: actuator_config.name = "Btn 2"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 6: actuator_config.name = "Btn 3"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
-		case 7: actuator_config.name = "Btn 4"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 0: actuator_config.name = "Button 1"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; actuator_config.max = 1; break;
+		case 1: actuator_config.name = "Button 2"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 2: actuator_config.name = "Button 3"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;
+		case 3: actuator_config.name = "Button 4"; break; //actuator_config.type = CC_ACTUATOR_MOMENTARY; break;	
+		case 4: actuator_config.name = "Knobswitch 1";  break;
+		case 5:	actuator_config.name = "Knobswitch 2";  break;
+		case 6:	actuator_config.name = "Knob 1";   break;
+		case 7: actuator_config.name = "Knob 2";   break;
+		case 8: actuator_config.name = "Expression 1";  break;
+		case 9:	actuator_config.name = "Expression 2";  break;
 		}
 
-		actuator_config.value = &potValues[i];
-		actuator_config.min = 0.0;
-		if (i < 4)
+		actuator_config.value = &actuatorValues[i];
+	//	actuator_config.min = 0.0;
+		if (i < 6)
 		{
-			// Setup continuous controllers here
-			actuator_config.type = CC_ACTUATOR_CONTINUOUS;
-			actuator_config.max = 1023.0;
-			actuator_config.supported_modes = CC_MODE_REAL | CC_MODE_INTEGER;
-		}
-		else
-		{
-			// Setup switches here
+		// Setup switches here					
 			actuator_config.type = CC_ACTUATOR_MOMENTARY;
-			//actuator_config.name = "Btn " + (char)(i - 4);
-			actuator_config.value = &buttonValue;
+			//actuator_config.name = "Btn " + i - 4;
+			////////actuator_config.value = 1.0;
 			actuator_config.min = 0.0;
 			actuator_config.max = 1.0;
 			actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
 		}
+		else
+		{			
+			// Setup continuous controllers here
+			actuator_config.type = CC_ACTUATOR_CONTINUOUS;
+			if (i<8) 
+				actuator_config.max = 255.0;
+			else
+				actuator_config.max = 1023.0;
+
+			actuator_config.supported_modes = CC_MODE_REAL | CC_MODE_INTEGER;		
+		}
+	//	
+	//	
 		actuator_config.max_assignments = 1;
 		// create and add actuator to device
 		cc_actuator_t *actuator;
@@ -104,26 +117,22 @@ void setup() {
 
 	
 	lcd.init(); //initialize the lcd
-	lcd.backlight(); //open the backlight
+	lcd.backlight(); // turn on the backlight
 
 					 // static_cast<cc_assignment_t*>(updateNames));
 					 //static_cast<FilterAuthenticate*>(eventData) 
 
-	startupmessage();
+	StartupMessage();
 	//set event callbacks
 	// the currently possible event callbacks are:
 	// CC_EV_ASSIGNMENT, CC_EV_UNASSIGNMENT and CC_EV_UPDATE
+
 	cc.setEventCallback(CC_EV_UPDATE, updateValues);
 	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
-	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);
+/*	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);*/
 }
 
-void startupmessage() {
-	lcd.setCursor(0, 0);
-	lcd.print("MOD DEVICES");
-	lcd.setCursor(0, 2);
-	lcd.print("Control Chain");
-}
+
 
 String val2;
 void displayInfo()
@@ -155,48 +164,109 @@ void displayInfo()
 }
 
 void loop() {
-	Encoder1AState = digitalRead(Encoder1A); // Reads the "current" state of the outputA
-	if (Encoder1AState != Encoder1ALastState) {
-		// If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
-		if (digitalRead(Encoder1A) != (digitalRead(Encoder1B))) {
-			Encoder1ACt++;
-		}
-		else {
-			Encoder1ACt--;
-		}
-		lcd.setCursor(3, 1);
-		lcd.print("enc 1:" + (String)Encoder1ACt + "   ") ;
-
+	
+	pinMode(buttonPin, INPUT);
+	digitalWrite(buttonPin, HIGH);
+	if (displayloop==500)
+	{ 
+		//lcd.setCursor(6, 0);
+		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
+		//lcd.setCursor(6, 2);
+		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
+		displayInfo();
+		displayloop = 0;
 	}
-	Encoder1ALastState = Encoder1AState;
-
-	Encoder2AState = digitalRead(Encoder2A); // Reads the "current" state of the outputA
-	if (Encoder2AState != Encoder2ALastState) {
-		// If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
-		if (digitalRead(Encoder2A) != digitalRead(Encoder2B)) {
-			Encoder2Ct++;
-		}
-		else {
-			Encoder2Ct--;
-		}
-		lcd.setCursor(1, 10);
-		lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
-
-	}
-	Encoder2ALastState = Encoder2AState;
+	displayloop++;
 
 	//lcd.clear();
 	//displayInfo();
-	readpots();
+	//actuatorValues[0] = readButton();
+
+	ReadEncoders();
+	//ReadPots();
 	cc.run();
 	//delay(100);
 
 }
 
+void ReadEncoders() {
+	Encoder1AState = digitalRead(Encoder1APin); // Reads the "current" state of the outputA
+	if (Encoder1AState != Encoder1ALastState) {
+		// If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
+		if (digitalRead(Encoder1APin) != (digitalRead(Encoder1BPin))) Encoder1Ct++;
+		else Encoder1Ct--;
+	}
+	if (Encoder1Ct > 255) Encoder1Ct = 255;
+	if (Encoder1Ct < 0)  Encoder1Ct = 0;
+	Encoder1ALastState = Encoder1AState;
+	actuatorValues[Encoder1Port] = (float)Encoder1Ct;
+
+	Encoder2AState = digitalRead(Encoder2APin); // Reads the "current" state of the outputA
+	if (Encoder2AState != Encoder2ALastState) {
+		if (digitalRead(Encoder2APin) != digitalRead(Encoder2BPin)) Encoder2Ct++;
+		else Encoder2Ct--;
+	}
+	if (Encoder2Ct > 255) Encoder2Ct = 255;
+	if (Encoder2Ct < 0)  Encoder2Ct = 0;
+	Encoder2ALastState = Encoder2AState;
+	actuatorValues[Encoder2Port] = (float)Encoder2Ct;
+}
+
+void updateLED(cc_assignment_t *assignment) {
+	// check if assignment mode is toggle
+	// turn led on/off according the assignment value
+	if (assignment->mode & CC_MODE_TOGGLE) {
+		if (assignment->value > 0.0)
+			digitalWrite(ledPin, HIGH);
+		else
+			digitalWrite(ledPin, LOW);
+	}
+}
+
+int readButton(void) {
+	// read the state of the switch into a local variable:
+	int reading = digitalRead(buttonPin);
+
+	// check to see if you just pressed the button
+	// (i.e. the input went from LOW to HIGH),  and you've waited
+	// long enough since the last press to ignore any noise:
+
+	// If the switch changed, due to noise or pressing:
+	if (reading != lastButtonState) {
+		// reset the debouncing timer
+		lastDebounceTime = millis();
+	}
+
+	if ((millis() - lastDebounceTime) > debounceDelay) {
+		// whatever the reading is at, it's been there for longer
+		// than the debounce delay, so take it as the actual current state:
+
+		// if the button state has changed:
+		if (reading != buttonState) {
+			buttonState = reading;
+
+			// save button last state
+			lastButtonState = reading;
+
+			// button pressed
+			if (buttonState == LOW) {
+				return 1;
+				// button released
+			}
+			else {
+				return -1;
+			}
+		}
+	}
+
+	lastButtonState = reading;
+	return 0;
+}
+
 //reads all available potentiometers
-void  readpots() {
+void  ReadPots() {
 	for (int i; i<amountOfPotentiometers; i++) {
-		potValues[i] = analogRead(i);
+	//	potValues[i] = analogRead(i);
 	}
 }
 
@@ -205,13 +275,56 @@ void updateValues(void *ass) {
 	cc_assignment_t* assignment = (cc_assignment_t*)ass;
 	actuatorValues[assignment->actuator_id] = assignment->value;
 	//	  writeValues(assignment->actuator_id);
-
 }
 
 void writeValues(cc_assignment_t *assignment)
 {
 
 }
+
+void SetupPins()
+{
+	// Encoders
+	pinMode(Encoder1APin, INPUT);
+	pinMode(Encoder1BPin, INPUT);
+
+	// Inputs
+	pinMode(2, INPUT);
+	pinMode(3, INPUT);
+	pinMode(4, INPUT);
+	pinMode(5, INPUT);
+	pinMode(6, INPUT);
+
+	// LEDs
+	pinMode(8, OUTPUT);
+	pinMode(9, OUTPUT);
+	pinMode(10, OUTPUT);
+	pinMode(11, OUTPUT);
+
+}
+
+void StartupMessage() {
+	lcd.setCursor(0, 0);
+	lcd.print("ISRMOD v1.0");
+	lcd.setCursor(0, 2);
+	lcd.print("Starting up...");
+
+	for (int i = 8; i < 12; i++)
+	{
+		digitalWrite(i, HIGH);
+		delay(500);
+		digitalWrite(i, LOW);
+	}
+	/*digitalWrite(8, HIGH);
+	digitalWrite(9, HIGH);
+	digitalWrite(10, HIGH);
+	digitalWrite(11, HIGH);*/
+
+	delay(500);
+	lcd.clear();
+
+}
+
 
 void clearlcd(void *ass)
 {
@@ -276,11 +389,4 @@ void writeNames(int num, int labelsize, int clr) {
 	}
 
 
-}
-
-void SetupPins()
-{
-	// Encoders
-	pinMode(Encoder1A, INPUT);
-	pinMode(Encoder1B, INPUT);
 }
