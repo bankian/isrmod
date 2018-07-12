@@ -9,6 +9,7 @@
 //LCDs used
 #define lines 4
 #define characters 20
+#define encodermaxval 99
 
 // the following variables are unsigned long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
@@ -64,7 +65,7 @@ void setup() {
 
 	// define device name (1st parameter) and its URI (2nd parameter).  The URI must be an unique identifier for your device. A good practice is to use a URL pointing to your project's code or documentation
 	const char *uri = "https://www.rogersons.net/ModControl";
-	cc_device_t *device = cc.newDevice("Ext", uri);
+	cc_device_t *device = cc.newDevice("ISR", uri);
 
 	for (int i = 0; i < amountOfPorts; i++) {
 		cc_actuator_config_t actuator_config;
@@ -100,7 +101,7 @@ void setup() {
 			// Setup continuous controllers here
 			actuator_config.type = CC_ACTUATOR_CONTINUOUS;
 			if (i<8) 
-				actuator_config.max = 255.0;
+				actuator_config.max = 99.0;
 			else
 				actuator_config.max = 1023.0;
 
@@ -133,6 +134,49 @@ void setup() {
 }
 
 
+void loop() {
+
+	/*pinMode(buttonPin, INPUT);
+	digitalWrite(buttonPin, HIGH);*/
+	if (displayloop == 500)
+	{
+		//lcd.setCursor(6, 0);
+		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
+		//lcd.setCursor(6, 2);
+		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
+		displayInfo();
+		displayloop = 0;
+		lcd.setCursor(10, 0);
+		//lcd.print("btn 1:" + (String)digitalRead(2) );
+		//lcd.setCursor(10, 1);
+		//lcd.print("btn 2:" + (String)digitalRead(3));
+		//lcd.setCursor(10, 2);
+		//lcd.print("btn 3:" + (String)digitalRead(4));
+		//lcd.setCursor(10, 3);
+		//lcd.print("btn 1:" + (String)digitalRead(5));
+	}
+	displayloop++;
+
+	//lcd.clear();
+	//displayInfo();
+	//actuatorValues[0] = readButton();
+	actuatorValues[0] = digitalRead(40);
+	actuatorValues[1] = digitalRead(42);
+	actuatorValues[2] = digitalRead(44);
+	actuatorValues[3] = digitalRead(46);
+
+	//digitalWrite(8, actuatorValues[3]);
+	//digitalWrite(9, actuatorValues[2]);
+	//digitalWrite(10, actuatorValues[1]);
+	//digitalWrite(11, actuatorValues[0]);
+
+	ReadEncoders();
+	//ReadPots();
+	cc.run();
+	//delay(100);
+
+}
+
 
 String val2;
 void displayInfo()
@@ -163,32 +207,6 @@ void displayInfo()
 	//u8g.print("A2 label:" + (String)actuatorNames[1]);
 }
 
-void loop() {
-	
-	pinMode(buttonPin, INPUT);
-	digitalWrite(buttonPin, HIGH);
-	if (displayloop==500)
-	{ 
-		//lcd.setCursor(6, 0);
-		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
-		//lcd.setCursor(6, 2);
-		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
-		displayInfo();
-		displayloop = 0;
-	}
-	displayloop++;
-
-	//lcd.clear();
-	//displayInfo();
-	//actuatorValues[0] = readButton();
-
-	ReadEncoders();
-	//ReadPots();
-	cc.run();
-	//delay(100);
-
-}
-
 void ReadEncoders() {
 	Encoder1AState = digitalRead(Encoder1APin); // Reads the "current" state of the outputA
 	if (Encoder1AState != Encoder1ALastState) {
@@ -196,7 +214,7 @@ void ReadEncoders() {
 		if (digitalRead(Encoder1APin) != (digitalRead(Encoder1BPin))) Encoder1Ct++;
 		else Encoder1Ct--;
 	}
-	if (Encoder1Ct > 255) Encoder1Ct = 255;
+	if (Encoder1Ct > encodermaxval ) Encoder1Ct = encodermaxval;
 	if (Encoder1Ct < 0)  Encoder1Ct = 0;
 	Encoder1ALastState = Encoder1AState;
 	actuatorValues[Encoder1Port] = (float)Encoder1Ct;
@@ -206,7 +224,7 @@ void ReadEncoders() {
 		if (digitalRead(Encoder2APin) != digitalRead(Encoder2BPin)) Encoder2Ct++;
 		else Encoder2Ct--;
 	}
-	if (Encoder2Ct > 255) Encoder2Ct = 255;
+	if (Encoder2Ct > encodermaxval) Encoder2Ct = encodermaxval;
 	if (Encoder2Ct < 0)  Encoder2Ct = 0;
 	Encoder2ALastState = Encoder2AState;
 	actuatorValues[Encoder2Port] = (float)Encoder2Ct;
@@ -273,7 +291,11 @@ void  ReadPots() {
 //updates actuator value and calls the write function
 void updateValues(void *ass) {
 	cc_assignment_t* assignment = (cc_assignment_t*)ass;
-	actuatorValues[assignment->actuator_id] = assignment->value;
+	if (assignment->actuator_id < 5)
+	{
+		actuatorValues[assignment->actuator_id] = assignment->value;
+		digitalWrite(11 - assignment->actuator_id, assignment->value);
+	}
 	//	  writeValues(assignment->actuator_id);
 }
 
@@ -289,11 +311,11 @@ void SetupPins()
 	pinMode(Encoder1BPin, INPUT);
 
 	// Inputs
-	pinMode(2, INPUT);
-	pinMode(3, INPUT);
-	pinMode(4, INPUT);
-	pinMode(5, INPUT);
-	pinMode(6, INPUT);
+	pinMode(40, INPUT);
+	pinMode(42, INPUT);
+	pinMode(44, INPUT);
+	pinMode(46, INPUT);
+	pinMode(48, INPUT);
 
 	// LEDs
 	pinMode(8, OUTPUT);
@@ -312,7 +334,7 @@ void StartupMessage() {
 	for (int i = 8; i < 12; i++)
 	{
 		digitalWrite(i, HIGH);
-		delay(500);
+		delay(300);
 		digitalWrite(i, LOW);
 	}
 	/*digitalWrite(8, HIGH);
@@ -320,7 +342,7 @@ void StartupMessage() {
 	digitalWrite(10, HIGH);
 	digitalWrite(11, HIGH);*/
 
-	delay(500);
+	//delay(500);
 	lcd.clear();
 
 }
