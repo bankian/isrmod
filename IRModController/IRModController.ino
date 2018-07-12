@@ -195,13 +195,13 @@ void displayInfo()
 	//lcd.clear();
 	lcd.print(val2);
 	lcd.setCursor(0, 0);
-	lcd.print("k1:" + (String)actuatorNames[0] + " " + (String)actuatorValues[0]);
+	lcd.print("s1:" + (String)actuatorNames[0] );
 	lcd.setCursor(0, 1);
-	lcd.print("k2:" + (String)actuatorNames[1] + " " + (String)actuatorValues[1]);
+	lcd.print("s2:" + (String)actuatorNames[1] );
 	lcd.setCursor(0, 2);
-	lcd.print("p1:" + (String)actuatorNames[2] + " " + (String)actuatorValues[2]);
+	lcd.print("s3:" + (String)actuatorNames[2] );
 	lcd.setCursor(0, 3);
-	lcd.print("p2:" + (String)actuatorNames[3] + " " + (String)actuatorValues[3]);
+	lcd.print("s4:" + (String)actuatorNames[3] );
 
 	//String val3 = "A2: " + (String)analogRead(1);
 	//u8g.print("A2 label:" + (String)actuatorNames[1]);
