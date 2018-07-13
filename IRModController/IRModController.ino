@@ -11,23 +11,26 @@
 #define characters 20
 #define encodermaxval 99
 
+#define buttons 5
+
 // the following variables are unsigned long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
-unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
-unsigned long debounceDelay    = 20; // the debounce time; increase if the output flickers
+unsigned long lastDebounceTime[buttons];	// the last time the output pin was toggled
+unsigned long debounceDelay = 20;			// the debounce time; increase if the output flickers
+int lastButtonState[buttons];				// the previous reading from the input pin
+int buttonState[buttons];					// the current reading from the input pin
 
 float buttonValue;
 int   buttonPin = 2;
 int displayloop = 0;
 
 int ledPin = 13;
-int buttonState;             // the current reading from the input pin
-int lastButtonState = HIGH;  // the previous reading from the input pin
 
 //amount of actuators connected 
 #define amountOfPorts 10
 #define amountOfPotentiometers 2
 float actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
+
 //potValues[amountOfPorts], 
 //2D array for saving the actuator labels
 char  actuatorNames[amountOfPorts][20];
@@ -55,7 +58,12 @@ void setup() {
 	digitalWrite(ledPin, LOW); */
 
 	// configure button pin as input and enable internal pullup
-
+	for (int i = 0; i < buttons; i++)
+	{
+		lastButtonState[i] = 0;
+		buttonState[i] = 0;
+		lastButtonState[i] = 0;
+	}
 
 	Encoder1ALastState = digitalRead(Encoder1APin);
 	Encoder2ALastState = digitalRead(Encoder2APin);
@@ -131,6 +139,12 @@ void setup() {
 	cc.setEventCallback(CC_EV_UPDATE, updateValues);
 	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
 /*	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);*/
+
+	int null;
+	for (int i = 0; i < buttons; i++)
+	{
+		null = readButton(0);
+	}
 }
 
 
@@ -157,24 +171,35 @@ void loop() {
 	}
 	displayloop++;
 
-	//lcd.clear();
-	//displayInfo();
-	//actuatorValues[0] = readButton();
-	actuatorValues[0] = digitalRead(40);
-	actuatorValues[1] = digitalRead(42);
-	actuatorValues[2] = digitalRead(44);
-	actuatorValues[3] = digitalRead(46);
-
-	//digitalWrite(8, actuatorValues[3]);
-	//digitalWrite(9, actuatorValues[2]);
-	//digitalWrite(10, actuatorValues[1]);
-	//digitalWrite(11, actuatorValues[0]);
-
+	actuatorValues[0] = readButton(0);
+	actuatorValues[1] = readButton(1);
+	actuatorValues[2] = readButton(2);
+	actuatorValues[3] = readButton(3);
+		
 	ReadEncoders();
 	//ReadPots();
 	cc.run();
 	//delay(100);
 
+}
+
+
+int readButton(int buttonnum) {
+	int bpin = 40 + (buttonnum * 2);
+	int reading = digitalRead(bpin);			// read the state of the switch into a local variable:
+													// check to see if you just pressed the button (i.e. the input went from LOW to HIGH),  and you've waited long enough since the last press to ignore any noise:	
+	if (reading != lastButtonState[buttonnum]) lastDebounceTime[buttonnum] = millis();	// If the switch changed, due to noise or pressing: reset the debouncing timer
+
+	if ((millis() - lastDebounceTime[buttonnum]) > debounceDelay) {  // whatever the reading is at, it's been there for longer than the debounce delay, so take it as the actual current state:
+		if (reading != buttonState[buttonnum]) { 				// if the button state has changed:
+			buttonState[buttonnum] = reading;					// save button last state			
+			lastButtonState[buttonnum] = reading;
+			if (buttonState[buttonnum] == LOW) return 1;		// button pressed
+			else return -1;							// button released
+		}
+	}
+	lastButtonState[buttonnum] = reading;
+	return 0;
 }
 
 
@@ -241,46 +266,6 @@ void updateLED(cc_assignment_t *assignment) {
 	}
 }
 
-int readButton(void) {
-	// read the state of the switch into a local variable:
-	int reading = digitalRead(buttonPin);
-
-	// check to see if you just pressed the button
-	// (i.e. the input went from LOW to HIGH),  and you've waited
-	// long enough since the last press to ignore any noise:
-
-	// If the switch changed, due to noise or pressing:
-	if (reading != lastButtonState) {
-		// reset the debouncing timer
-		lastDebounceTime = millis();
-	}
-
-	if ((millis() - lastDebounceTime) > debounceDelay) {
-		// whatever the reading is at, it's been there for longer
-		// than the debounce delay, so take it as the actual current state:
-
-		// if the button state has changed:
-		if (reading != buttonState) {
-			buttonState = reading;
-
-			// save button last state
-			lastButtonState = reading;
-
-			// button pressed
-			if (buttonState == LOW) {
-				return 1;
-				// button released
-			}
-			else {
-				return -1;
-			}
-		}
-	}
-
-	lastButtonState = reading;
-	return 0;
-}
-
 //reads all available potentiometers
 void  ReadPots() {
 	for (int i; i<amountOfPotentiometers; i++) {
@@ -311,6 +296,7 @@ void SetupPins()
 	pinMode(Encoder1BPin, INPUT);
 
 	// Inputs
+	// Buttons
 	pinMode(40, INPUT);
 	pinMode(42, INPUT);
 	pinMode(44, INPUT);
@@ -341,10 +327,8 @@ void StartupMessage() {
 	digitalWrite(9, HIGH);
 	digitalWrite(10, HIGH);
 	digitalWrite(11, HIGH);*/
-
 	//delay(500);
 	lcd.clear();
-
 }
 
 
