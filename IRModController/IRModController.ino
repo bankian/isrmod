@@ -29,9 +29,8 @@ int ledPin = 13;
 //amount of actuators connected 
 #define amountOfPorts 10
 #define amountOfPotentiometers 2
-float actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts];
-
-//potValues[amountOfPorts], 
+float actuatorValues[amountOfPorts], maxValues[amountOfPorts], minValues[amountOfPorts], potValues[amountOfPorts];
+ 
 //2D array for saving the actuator labels
 char  actuatorNames[amountOfPorts][20];
 //String testactname = "name unassigned";
@@ -56,6 +55,7 @@ void setup() {
 	// configure led
 	/*pinMode(ledPin, OUTPUT);
 	digitalWrite(ledPin, LOW); */
+
 
 	// configure button pin as input and enable internal pullup
 	for (int i = 0; i < buttons; i++)
@@ -136,6 +136,11 @@ void setup() {
 	// the currently possible event callbacks are:
 	// CC_EV_ASSIGNMENT, CC_EV_UNASSIGNMENT and CC_EV_UPDATE
 
+	// Turn the relay on to enable serial comms
+	pinMode(36, OUTPUT);
+	digitalWrite(36, HIGH);
+
+
 	cc.setEventCallback(CC_EV_UPDATE, updateValues);
 	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
 /*	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);*/
@@ -160,14 +165,7 @@ void loop() {
 		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
 		displayInfo();
 		displayloop = 0;
-		lcd.setCursor(10, 0);
-		//lcd.print("btn 1:" + (String)digitalRead(2) );
-		//lcd.setCursor(10, 1);
-		//lcd.print("btn 2:" + (String)digitalRead(3));
-		//lcd.setCursor(10, 2);
-		//lcd.print("btn 3:" + (String)digitalRead(4));
-		//lcd.setCursor(10, 3);
-		//lcd.print("btn 1:" + (String)digitalRead(5));
+		lcd.setCursor(10, 0);		
 	}
 	displayloop++;
 
@@ -175,14 +173,27 @@ void loop() {
 	actuatorValues[1] = readButton(1);
 	actuatorValues[2] = readButton(2);
 	actuatorValues[3] = readButton(3);
+	
+	//ReadPots();
+	actuatorValues[8] = analogRead(1); // potValues[0];
+	actuatorValues[9] = analogRead(2); //potValues[1];
 		
 	ReadEncoders();
-	//ReadPots();
+	
 	cc.run();
 	//delay(100);
 
 }
 
+//reads all available potentiometers
+void  ReadPots() {
+	potValues[0] = analogRead(1);
+	potValues[1] = analogRead(2);
+	/*
+	for (int i=0; i<amountOfPotentiometers; i++) {	
+	}
+	*/
+}
 
 int readButton(int buttonnum) {
 	int bpin = 40 + (buttonnum * 2);
@@ -201,7 +212,6 @@ int readButton(int buttonnum) {
 	lastButtonState[buttonnum] = reading;
 	return 0;
 }
-
 
 String val2;
 void displayInfo()
@@ -266,12 +276,7 @@ void updateLED(cc_assignment_t *assignment) {
 	}
 }
 
-//reads all available potentiometers
-void  ReadPots() {
-	for (int i; i<amountOfPotentiometers; i++) {
-	//	potValues[i] = analogRead(i);
-	}
-}
+
 
 //updates actuator value and calls the write function
 void updateValues(void *ass) {
