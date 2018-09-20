@@ -192,7 +192,7 @@ void  ReadPots() {
 	/*
 	for (int i=0; i<amountOfPotentiometers; i++) {	
 	}
-	*/
+	*/ 
 }
 
 int readButton(int buttonnum) {
