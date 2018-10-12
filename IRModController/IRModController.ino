@@ -1,7 +1,7 @@
 // 
 // V0.1	30/12/17	ISR	Basic control from a single knob
 // V0.2				ISR	Display value of a single label (after enabling strings in config.h)
-// V0.5 13/10/18	ISR	Multi-page display
+// V0.5 13/10/18	ISR	three-page display
 
 #include <Wire.h> 
 #include <ControlChain.h>
@@ -92,9 +92,7 @@ void setup() {
 		if (i < 6)
 		{
 		// Setup switches here					
-			actuator_config.type = CC_ACTUATOR_MOMENTARY;
-			//actuator_config.name = "Btn " + i - 4;
-			////////actuator_config.value = 1.0;
+			actuator_config.type = CC_ACTUATOR_MOMENTARY;		
 			actuator_config.min = 0.0;
 			actuator_config.max = 1.0;
 			actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
@@ -146,10 +144,6 @@ void setup() {
 void loop() {
 	if (displayloop == 500)
 	{
-		//lcd.setCursor(6, 0);
-		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
-		//lcd.setCursor(6, 2);
-		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
 		displayInfo();
 		displayloop = 0;
 		lcd.setCursor(10, 0);		
@@ -317,14 +311,9 @@ void StartupMessage() {
 	for (int i = 8; i < 12; i++)
 	{
 		digitalWrite(i, HIGH);
-		delay(300);
+		delay(200);
 		digitalWrite(i, LOW);
 	}
-	/*digitalWrite(8, HIGH);
-	digitalWrite(9, HIGH);
-	digitalWrite(10, HIGH);
-	digitalWrite(11, HIGH);*/
-	//delay(500);
 	lcd.clear();
 }
 
