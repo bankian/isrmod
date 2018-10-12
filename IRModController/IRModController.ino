@@ -1,12 +1,13 @@
-// Ian R Dec 17
-// V0.1 - Basic control from a single knob
-// V0.2 - Display value of a single label (after enabling strings in config.h)
+// 
+// V0.1	30/12/17	ISR	Basic control from a single knob
+// V0.2				ISR	Display value of a single label (after enabling strings in config.h)
+// V0.5 13/10/18	ISR	Multi-page display
 
 #include <Wire.h> 
 #include <ControlChain.h>
 #include <LiquidCrystal_I2C.h>
 
-//LCDs used
+//LCD configuration
 #define lines 4
 #define characters 20
 #define encodermaxval 99
@@ -199,10 +200,6 @@ int ReadButton(int buttonnum) {
 void  ReadPots() {
 	potValues[0] = analogRead(1);
 	potValues[1] = analogRead(2);
-	/*
-	for (int i=0; i<amountOfPotentiometers; i++) {	
-	}
-	*/  
 }
 
 String val2;
