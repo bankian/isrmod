@@ -131,10 +131,9 @@ void setup() {
 	pinMode(36, OUTPUT);
 	digitalWrite(36, HIGH);
 
-
 	cc.setEventCallback(CC_EV_UPDATE, updateValues);
 	cc.setEventCallback(CC_EV_ASSIGNMENT, updateNames);
-/*	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);*/
+	cc.setEventCallback(CC_EV_UNASSIGNMENT, clearlcd);
 
 	int null;
 	for (int i = 0; i < buttons; i++)
@@ -332,11 +331,20 @@ void StartupMessage() {
 void clearlcd(void *ass)
 {
 	cc_assignment_t* assignment = (cc_assignment_t*)ass;
-	//lcd.clear();
-	//for (int i=0;i < assignment->label.size;i++)
-	//{ 
-	//	//actuatorNames[assignment->actuator_id][i] = (char)"";
-	//}
+	//char blank = char("                ");
+	
+	/*int len = assignment->label.size;
+	if (len >= characters) len = characters - 1;
+	for (int i = 0; i < len; i++) {
+		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
+	}*/
+	
+	for (int i = 0; i < 18; i++)
+	{
+		/*actuatorNames[assignment->actuator_id][i] = (char)" ";*/
+		actuatorNames[0][i] = (char)" ";
+	}
+
 }
 
 //when assigned to a actuator, gets the needed information and calls the write names function
@@ -354,6 +362,7 @@ void updateNames(void *ass) {
 	for (int i = 0; i < len; i++) {
 		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
 	}
+
 	//writeNames(assignment->actuator_id, assignment->label.size, 0);
 	//displayInfo();
 }
