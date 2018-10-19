@@ -1,7 +1,8 @@
 // 
-// V0.1	30/12/17	ISR	Basic control from a single knob
-// V0.2				ISR	Display value of a single label (after enabling strings in config.h)
-// V0.5 13/10/18	ISR	Multi-page display
+// v0.1	30/12/17	ISR	Basic control from a single knob
+// v0.2				ISR	Display value of a single label (after enabling strings in config.h)
+// v0.5 13/10/18	ISR	Multi-page display
+// v0.3 13/10/18	ISR	Clear display on unassignment
 
 #include <Wire.h> 
 #include <ControlChain.h>
@@ -14,18 +15,17 @@
 #define buttons 5
 
 // the following variables are unsigned long's because the time, measured in miliseconds, will quickly become a bigger number than can be stored in an int.
-unsigned long lastDebounceTime[buttons];	// the last time the output pin was toggled
-unsigned long debounceDelay = 20;			// the debounce time; increase if the output flickers
-int lastButtonState[buttons];				// the previous reading from the input pin
-int buttonState[buttons];					// the current reading from the input pin
-float buttonValue;
-int   buttonPin = 2;
-int displayloop = 0;
-int ledPin = 13;
-int displaypage = 0;
-int displaybuttonstate;
-int displaybuttonlaststate=0;
-
+unsigned long	lastDebounceTime[buttons];	// the last time the output pin was toggled
+unsigned long	debounceDelay = 20;			// the debounce time; increase if the output flickers
+int				lastButtonState[buttons];				// the previous reading from the input pin
+int				buttonState[buttons];					// the current reading from the input pin
+float			buttonValue;
+int				buttonPin = 2;
+int				displayloop = 0;
+int				ledPin = 13;
+int				displaypage = 0;
+int				displaybuttonstate;
+int				displaybuttonlaststate=0;
 
 
 //amount of actuators connected 
@@ -54,6 +54,7 @@ ControlChain cc;
 LiquidCrystal_I2C lcd(0x3F, characters, lines); // set the LCD address to 0x3F for a 20 chars and 4 line display
 
 void setup() {	
+
 	// configure button pin as input and enable internal pullup
 	for (int i = 0; i < buttons; i++)
 	{
@@ -65,11 +66,9 @@ void setup() {
 	Encoder1ALastState = digitalRead(Encoder1APin);
 	Encoder2ALastState = digitalRead(Encoder2APin);
 
-	// initialize control chain
-	cc.begin();
+	cc.begin(); 												// initialize control chain
 
-	// define device name (1st parameter) and its URI (2nd parameter).  The URI must be an unique identifier for your device. A good practice is to use a URL pointing to your project's code or documentation
-	const char *uri = "https://www.rogersons.net/ModControl";
+	const char *uri = "https://www.rogersons.net/ModControl";	// define device name (1st parameter) and its URI (2nd parameter).  The URI must be an unique identifier for your device. A good practice is to use a URL pointing to your project's code or documentation
 	cc_device_t *device = cc.newDevice("ISR", uri);
 
 	for (int i = 0; i < amountOfPorts; i++) {
@@ -87,14 +86,11 @@ void setup() {
 		case 9:	actuator_config.name = "Expression 2";  break;
 		}
 
-		actuator_config.value = &actuatorValues[i];
-	//	actuator_config.min = 0.0;
+		actuator_config.value = &actuatorValues[i];	
 		if (i < 6)
 		{
 		// Setup switches here					
 			actuator_config.type = CC_ACTUATOR_MOMENTARY;
-			//actuator_config.name = "Btn " + i - 4;
-			////////actuator_config.value = 1.0;
 			actuator_config.min = 0.0;
 			actuator_config.max = 1.0;
 			actuator_config.supported_modes = CC_MODE_TOGGLE | CC_MODE_TRIGGER;
@@ -331,20 +327,28 @@ void StartupMessage() {
 void clearlcd(void *ass)
 {
 	cc_assignment_t* assignment = (cc_assignment_t*)ass;
-	//char blank = char("                ");
-	
+	char *blank = " ";
+	char *bk = "blank";
+	//actuatorNames[0] = bk.c_str();
+
+	for (int i = 0; i < 16 ; i++) //sizeof(actuatorNames[0]-1)
+	{
+		/*actuatorNames[assignment->actuator_id][i] = (char)" ";*/
+		actuatorNames[0][i] = *blank;
+	}
+
+	//for (int i = 0; i < 18; i++)
+	//{
+	//	/*actuatorNames[assignment->actuator_id][i] = (char)" ";*/
+	//	actuatorNames[0][i] = (char)" ";
+	//}
+
 	/*int len = assignment->label.size;
 	if (len >= characters) len = characters - 1;
 	for (int i = 0; i < len; i++) {
 		actuatorNames[assignment->actuator_id][i] = assignment->label.text[i];
 	}*/
 	
-	for (int i = 0; i < 18; i++)
-	{
-		/*actuatorNames[assignment->actuator_id][i] = (char)" ";*/
-		actuatorNames[0][i] = (char)" ";
-	}
-
 }
 
 //when assigned to a actuator, gets the needed information and calls the write names function
