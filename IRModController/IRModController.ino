@@ -91,6 +91,7 @@ void setup() {
 		if (i < 6)
 		{
 		// Setup switches here					
+
 			actuator_config.type = CC_ACTUATOR_MOMENTARY;
 			actuator_config.min = 0.0;
 			actuator_config.max = 1.0;
@@ -142,10 +143,6 @@ void setup() {
 void loop() {
 	if (displayloop == 1000)
 	{
-		//lcd.setCursor(6, 0);
-		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
-		//lcd.setCursor(6, 2);
-		//lcd.print("enc 2:" + (String)Encoder2Ct + "    ");
 		displayInfo();
 		displayloop = 0;
 		lcd.setCursor(10, 0);		
@@ -318,14 +315,9 @@ void StartupMessage() {
 	for (int i = 8; i < 12; i++)
 	{
 		digitalWrite(i, HIGH);
-		delay(300);
+		delay(200);
 		digitalWrite(i, LOW);
 	}
-	/*digitalWrite(8, HIGH);
-	digitalWrite(9, HIGH);
-	digitalWrite(10, HIGH);
-	digitalWrite(11, HIGH);*/
-	//delay(500);
 	lcd.clear();
 }
 
