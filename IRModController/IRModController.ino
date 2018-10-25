@@ -1,8 +1,8 @@
 // 
 // v0.1	30/12/17	ISR	Basic control from a single knob
 // v0.2				ISR	Display value of a single label (after enabling strings in config.h)
-// v0.5 13/10/18	ISR	Multi-page display
-// v0.3 13/10/18	ISR	Clear display on unassignment
+// v0.3 13/10/18	ISR	Multi-page display
+// v0.4 13/10/18	ISR	Clear display on unassignment
 
 #include <Wire.h> 
 #include <ControlChain.h>
@@ -26,6 +26,7 @@ int				ledPin = 13;
 int				displaypage = 0;
 int				displaybuttonstate;
 int				displaybuttonlaststate=0;
+String			debugmessage = "";
 
 
 //amount of actuators connected 
@@ -139,7 +140,7 @@ void setup() {
 }
 
 void loop() {
-	if (displayloop == 500)
+	if (displayloop == 1000)
 	{
 		//lcd.setCursor(6, 0);
 		//lcd.print("enc 1:" + (String)Encoder1Ct + "   ");
@@ -228,6 +229,11 @@ void displayInfo()
 		lcd.print("KS2:" + (String)actuatorNames[5]);
 		break;
 	}
+	lcd.setCursor(5, 3);
+	lcd.print("db:" + debugmessage);//"dsp:" + displaypage 
+	//lcd.setCursor(0, 3);
+	//lcd.print("dsp:" + (String)displaypage);
+
 	//String val3 = "A2: " + (String)analogRead(1);
 	//u8g.print("A2 label:" + (String)actuatorNames[1]);
 }
@@ -335,6 +341,11 @@ void clearlcd(void *ass)
 	{
 		/*actuatorNames[assignment->actuator_id][i] = (char)" ";*/
 		actuatorNames[0][i] = *blank;
+		int id = assignment->id;
+		//string name = assignment->id;
+		debugmessage = (String)id;
+
+		//actuatorNames[assignment->actuator_id][i] = *blank;
 	}
 
 	//for (int i = 0; i < 18; i++)
