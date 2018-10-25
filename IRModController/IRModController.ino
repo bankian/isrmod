@@ -226,9 +226,11 @@ void displayInfo()
 		lcd.print("KS2:" + (String)actuatorNames[5]);
 		break;
 	}
-	lcd.setCursor(5, 3);
-	lcd.print("db:" + debugmessage);//"dsp:" + displaypage 
-	//lcd.setCursor(0, 3);
+	//lcd.setCursor(5, 3);
+	//lcd.print("db:" + debugmessage);//"dsp:" + displaypage 
+	
+									
+									//lcd.setCursor(0, 3);
 	//lcd.print("dsp:" + (String)displaypage);
 
 	//String val3 = "A2: " + (String)analogRead(1);
